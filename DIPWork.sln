@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2026
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DIPWork", "DIPWork\DIPWork.csproj", "{F22BB786-DFDB-413E-BAC9-245BD9BDE304}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F22BB786-DFDB-413E-BAC9-245BD9BDE304}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F22BB786-DFDB-413E-BAC9-245BD9BDE304}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F22BB786-DFDB-413E-BAC9-245BD9BDE304}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F22BB786-DFDB-413E-BAC9-245BD9BDE304}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BADB3D46-8E28-4F9B-9FEB-59C488B12068}
+	EndGlobalSection
+EndGlobal
