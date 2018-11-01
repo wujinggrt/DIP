@@ -7,6 +7,27 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height=" Auto"></RowDefinition>
+            <RowDefinition Height=" *" ></RowDefinition>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="125,0,124.6,0" Width="544">
+            <StackPanel.Resources>
+                <!-- automatically applies to the target type, then making the property Styl={... needless.-->
+                <Style x:Key="ButtonStyle" TargetType="Button">
+                    <Setter Property="Button.Margin" Value="5" />
+                    <Setter Property="Button.Padding" Value="5,2" />
+                    <Setter Property="Control.FontSize" Value="25" />
+                </Style>
+            </StackPanel.Resources>
+            <Button Style="{StaticResource ButtonStyle}" Click="Open_Click" Content="Open Image"></Button>
+            <Button Style="{StaticResource ButtonStyle}" Click="Save_Click" Content="Save Image"></Button>
+            <Button Style="{StaticResource ButtonStyle}" Click="Convert_Click" Content="Convert To Gray"></Button>
+        </StackPanel>
+        <Image Name="displayImageCtr" Grid.Row="1"
+            RenderOptions.BitmapScalingMode="NearestNeighbor"
+            HorizontalAlignment="Left" VerticalAlignment="Top"
+            Stretch="UniformToFill" >
+        </Image>        
     </Grid>
 </Window>
