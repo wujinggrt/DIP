@@ -5,13 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DIPWork"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="600" Width="1000">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height=" Auto"></RowDefinition>
             <RowDefinition Height=" *" ></RowDefinition>
         </Grid.RowDefinitions>
-        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="125,0,124.6,0" Width="544">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="22,0,25.6,0" Width="743">
             <StackPanel.Resources>
                 <!-- automatically applies to the target type, then making the property Styl={... needless.-->
                 <Style x:Key="ButtonStyle" TargetType="Button">
@@ -23,11 +23,12 @@
             <Button Style="{StaticResource ButtonStyle}" Click="Open_Click" Content="Open Image"></Button>
             <Button Style="{StaticResource ButtonStyle}" Click="Save_Click" Content="Save Image"></Button>
             <Button Style="{StaticResource ButtonStyle}" Click="Convert_Click" Content="Convert To Gray"></Button>
+            <Button Style="{StaticResource ButtonStyle}" Click="Histo_Click" Content="Get Histogram"></Button>
         </StackPanel>
         <Image Name="displayImageCtr" Grid.Row="1"
             RenderOptions.BitmapScalingMode="NearestNeighbor"
             HorizontalAlignment="Left" VerticalAlignment="Top"
-            Stretch="UniformToFill" >
-        </Image>        
+            Stretch="Fill" >
+        </Image>
     </Grid>
 </Window>

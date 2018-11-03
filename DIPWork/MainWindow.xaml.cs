@@ -33,19 +33,7 @@ namespace DIPWork
         private SaveFileDialog saveDialog;
         private string fileFormatFilter;
 
-        private WriteableBitmap writeableBitmap;
-        //private ImageProcessor 
-
-        private byte[] R = null;
-        private byte[] G = null;
-        private byte[] B = null;
-
-        private int rows;
-        private int cols;
-
-        private int stride;
-        private double DPIX;
-        private double DPIY;
+        private Processor processor = new Processor();
 
         private void InitializerFields()
         {
@@ -77,35 +65,19 @@ namespace DIPWork
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-            /*if (processor.HasImage)
+            if (processor.HasImage)
             {
                 openDialog.InitialDirectory = processor.SourceImagePath;
             }
             else
-            {*/
-            openDialog.InitialDirectory = Environment.CurrentDirectory;
-            //}
-            /*
-
-             */
+            {
+                openDialog.InitialDirectory = Environment.CurrentDirectory;
+            }
             Nullable<bool> result = openDialog.ShowDialog();
             if (result == true)
             {
-                var filePath = openDialog.FileName;
-                Uri uri = new Uri(filePath, UriKind.RelativeOrAbsolute);
-                var bitmapImage = new BitmapImage(uri);
-                writeableBitmap = new WriteableBitmap(bitmapImage);
-
-                stride = writeableBitmap.BackBufferStride;
-                cols = writeableBitmap.PixelWidth;
-                rows = writeableBitmap.PixelHeight;
-                DPIX = writeableBitmap.DpiX;
-                DPIY = writeableBitmap.DpiY;
-                R = new byte[rows * cols];
-                G = new byte[rows * cols];
-                B = new byte[rows * cols];
-                displayImageCtr.Source = writeableBitmap;
-                DecodeImage(writeableBitmap);
+                processor.SetImage(openDialog.FileName);
+                displayImageCtr.Source = processor.Image;
             }
         }
 
@@ -123,110 +95,53 @@ namespace DIPWork
                     PBE.Save(stream);
                 }
             }
-
-        }
-
-        private int GetTailAddressOffset()
-        {
-            return (int)(4 - writeableBitmap.BackBufferStride % 4) % 4;
         }
 
         private void Convert_Click(object sender, RoutedEventArgs e)
         {
-            displayImageCtr.Source = Color2Gray();
-        }
-        
-        protected void DecodeImage(WriteableBitmap source)
-        {
-            try
-            {
-                source.Lock();
-                unsafe
-                {
-                    byte* pBackBuffer = (byte*)(source.BackBuffer);
-                    int currentPixelIndex = 0; //当前解码像素索引                    
-                    byte[] r = R;
-                    byte[] g = G;
-                    byte[] b = B;
-                    int tailAddressOffset = GetTailAddressOffset();
-                    for (int row = 0; row < rows; row++)
-                    {
-                        for (int column = 0; column < cols; column++)
-                        {
-                            b[currentPixelIndex] = *pBackBuffer++;
-                            g[currentPixelIndex] = *pBackBuffer++;
-                            r[currentPixelIndex++] = *pBackBuffer++;
-                            pBackBuffer++;
-                        }
-                        pBackBuffer = pBackBuffer + tailAddressOffset;
-                    }
-                }
-            }
-            finally
-            {
-                source.Unlock();
-            }
+            displayImageCtr.Source = processor.Color2Gray();
         }
 
-        private WriteableBitmap Color2Gray()
+        private void Histo_Click(object sender, RoutedEventArgs e)
         {
-            WriteableBitmap wb = null;
-            byte[] gray = new byte[R.Length];
-            for (int i = 0; i < gray.Length; i++)
-            {
-                gray[i] = (byte)RGB2Gray64(R[i], G[i], B[i], 0);
-            }
-            wb = CreateWB(gray, PixelFormats.Gray8);
-            return wb;
-        }
-        
-        private long RGB2Gray64(long r, long g, long b, int scale)
-        {   //gray = r*0.299+g*0.587+b*0.114  系数扩大了16384倍，即左移的14位
-            return ((r << scale) * 4899 + (g << scale) * 9617 + (b << scale) * 1868) >> 14;
-        }
-        
-        private WriteableBitmap CreateWB(byte[] imageData, PixelFormat pf)
-        {
-            WriteableBitmap wb = new WriteableBitmap(cols, rows, DPIX, DPIY, pf, null);
-            Int32Rect rect = new Int32Rect(0, 0, wb.PixelWidth, wb.PixelHeight);
-            int stride = wb.PixelWidth * pf.BitsPerPixel / 8;
-            wb.WritePixels(rect, imageData, stride, 0);
-            return wb;
+            displayImageCtr.Source = processor.GetHisto(processor.Color2Gray());
         }
     }
 
+
     class Processor
     {
-        Processor(string src)
+        public Processor()
         {
-            Uri uri = new Uri(src, UriKind.RelativeOrAbsolute);
-            var bitmapImage = new BitmapImage(uri);
-            writeableBitmap = new WriteableBitmap(bitmapImage);
-
-            stride = writeableBitmap.BackBufferStride;
-            cols = writeableBitmap.PixelWidth;
-            rows = writeableBitmap.PixelHeight;
-            DPIX = writeableBitmap.DpiX;
-            DPIY = writeableBitmap.DpiY;
-            R = new byte[rows * cols];
-            G = new byte[rows * cols];
-            B = new byte[rows * cols];
-
-            DecodeImage(writeableBitmap);
         }
 
-        private WriteableBitmap writeableBitmap;
+        private WriteableBitmap writeableBitmap = null;
+        private bool hasImage = false;
+        private string sourceImagePath = null;
 
-        private byte[] R = null;
-        private byte[] G = null;
-        private byte[] B = null;
+        private ColorContents contents;
 
         private int rows;
         private int cols;
 
         private int stride;
+
         private double DPIX;
         private double DPIY;
+
+        struct ColorContents
+        {
+            public byte[] R;
+            public byte[] G;
+            public byte[] B;
+
+            public void Allocate(int size)
+            {
+                R = new byte[size];
+                G = new byte[size];
+                B = new byte[size];
+            }
+        }
 
         public WriteableBitmap Image
         {
@@ -234,29 +149,193 @@ namespace DIPWork
             {
                 return writeableBitmap;
             }
-            set
+            private set
             {
             }
         }
 
-        private int GetTailAddressOffset()
+        public bool HasImage
         {
-            return (int)(4 - writeableBitmap.BackBufferStride % 4) % 4;
+            get
+            {
+                return hasImage;
+            }
+            private set
+            {
+            }
         }
 
-        protected void DecodeImage(WriteableBitmap source)
+        public string SourceImagePath
+        {
+            get
+            {
+                return sourceImagePath;
+            }
+            private set
+            {
+            }
+        }
+
+        public void SetImage(string path)
+        {
+            hasImage = true;
+            sourceImagePath = path;
+
+            Uri uri = new Uri(path, UriKind.RelativeOrAbsolute);
+            var bitmapImage = new BitmapImage(uri);
+            writeableBitmap = new WriteableBitmap(bitmapImage);
+        }
+
+        public WriteableBitmap Color2Gray()
+        {
+            UpdateData();
+
+            WriteableBitmap wb = null;
+            byte[] gray = new byte[contents.R.Length];
+            for (int i = 0; i < gray.Length; i++)
+            {
+                gray[i] = (byte)RGB2Gray64(contents.R[i], contents.G[i], contents.B[i], 0);
+            }
+            wb = CreateWB(gray, PixelFormats.Gray8);
+            return wb;
+        }
+
+        private int[] GetPixelCount(WriteableBitmap grayBitmap)
+        {
+            int[] statistics = new int[256];
+            try
+            {
+                grayBitmap.Lock();
+                unsafe
+                {
+                    byte* pBackBuffer = (byte*)(grayBitmap.BackBuffer);
+                    int tailAddressOffset = GetTailAddressOffset(grayBitmap);
+                    for (int row = 0; row < rows; row++)
+                    {
+                        for (int column = 0; column < cols; column++)
+                        {
+                            int pixel = (int)(*pBackBuffer++);
+                            statistics[pixel]++;
+                        }
+                        pBackBuffer = pBackBuffer + tailAddressOffset;
+                    }
+                }
+            }
+            finally
+            {
+                grayBitmap.Unlock();
+            }
+
+            return statistics;
+        }
+
+        private void GetMaxMin(int[] array, ref int max, ref int min)
+        {
+            max = 0;
+            min = 0;
+            for (int i = 0; i < array.Length; ++i)
+            {
+                if (array[i] > max)
+                {
+                    max = array[i];
+                    continue;
+                }
+                if (array[i] < min)
+                {
+                    min = array[i];
+                }
+            }
+        }
+
+        public WriteableBitmap GetHisto(WriteableBitmap grayPixel)
+        {
+            var size = cols * rows;
+            int pixelCols = 255;
+            int pixelRows = 100;
+
+            var statistics = GetPixelCount(grayPixel);
+            byte[] histogramContents = new byte[pixelCols * pixelRows];
+
+            int max = 0;
+            int min = 0;
+            GetMaxMin(statistics, ref max, ref min);
+
+            double maxPercent = max / (double)size;
+
+            for (int i = 0; i < pixelRows; ++i)
+            {
+                for (int j = 0; j < pixelCols; ++j)
+                {
+                    // 百分比, p/max - 100
+                    var check = (double)(((double)statistics[j]) / ((double)size));
+                    if (i < (100 - check / maxPercent * 100))
+                    {
+                        histogramContents[i * pixelCols + j] = 255;
+                    }
+                    else
+                    {
+                        histogramContents[i * pixelCols + j] = 0;
+                    }
+                }
+            }
+
+            var wb = new WriteableBitmap(pixelCols, pixelRows, DPIX, DPIY, PixelFormats.Gray8, null);
+            Int32Rect rect = new Int32Rect(0, 0, wb.PixelWidth, wb.PixelHeight);
+            int stride = wb.PixelWidth * PixelFormats.Gray8.BitsPerPixel / 8;
+            wb.WritePixels(rect, histogramContents, stride, 0);
+            return wb;
+        }
+
+        private void UpdateData()
+        {
+            UpdateStride();
+            UpdateSize();
+            UpdateDPI();
+            AllocateContents();
+            DecodeImageBgr32();
+        }
+
+        private void UpdateStride()
+        {
+            stride = writeableBitmap.BackBufferStride;
+        }
+
+        private void UpdateSize()
+        {
+            cols = writeableBitmap.PixelWidth;
+            rows = writeableBitmap.PixelHeight;
+        }
+
+        private void UpdateDPI()
+        {
+            DPIX = writeableBitmap.DpiX;
+            DPIY = writeableBitmap.DpiY;
+        }
+
+        private void AllocateContents()
+        {
+            var size = writeableBitmap.PixelWidth * writeableBitmap.PixelHeight;
+            contents.Allocate(size);
+        }
+
+        private int GetTailAddressOffset(WriteableBitmap wb)
+        {
+            return (int)(4 - wb.BackBufferStride % 4) % 4;
+        }
+
+        protected void DecodeImageBgr32()
         {
             try
             {
-                source.Lock();
+                writeableBitmap.Lock();
                 unsafe
                 {
-                    byte* pBackBuffer = (byte*)(source.BackBuffer);
-                    int currentPixelIndex = 0; //当前解码像素索引                    
-                    byte[] r = R;
-                    byte[] g = G;
-                    byte[] b = B;
-                    int tailAddressOffset = GetTailAddressOffset();
+                    byte* pBackBuffer = (byte*)(writeableBitmap.BackBuffer);
+                    int currentPixelIndex = 0; 
+                    byte[] r = contents.R;
+                    byte[] g = contents.G;
+                    byte[] b = contents.B;
+                    int tailAddressOffset = GetTailAddressOffset(writeableBitmap);
                     for (int row = 0; row < rows; row++)
                     {
                         for (int column = 0; column < cols; column++)
@@ -272,20 +351,8 @@ namespace DIPWork
             }
             finally
             {
-                source.Unlock();
+                writeableBitmap.Unlock();
             }
-        }
-
-        public WriteableBitmap Color2Gray()
-        {
-            WriteableBitmap wb = null;
-            byte[] gray = new byte[R.Length];
-            for (int i = 0; i < gray.Length; i++)
-            {
-                gray[i] = (byte)RGB2Gray64(R[i], G[i], B[i], 0);
-            }
-            wb = CreateWB(gray, PixelFormats.Gray8);
-            return wb;
         }
 
         private long RGB2Gray64(long r, long g, long b, int scale)
