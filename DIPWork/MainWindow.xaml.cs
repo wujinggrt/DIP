@@ -101,11 +101,6 @@ namespace DIPWork
         {
             displayImageCtr.Source = processor.Color2Gray();
         }
-
-        private void Histo_Click(object sender, RoutedEventArgs e)
-        {
-            displayImageCtr.Source = processor.GetHisto(processor.Color2Gray());
-        }
     }
 
 
@@ -197,92 +192,6 @@ namespace DIPWork
                 gray[i] = (byte)RGB2Gray64(contents.R[i], contents.G[i], contents.B[i], 0);
             }
             wb = CreateWB(gray, PixelFormats.Gray8);
-            return wb;
-        }
-
-        private int[] GetPixelCount(WriteableBitmap grayBitmap)
-        {
-            int[] statistics = new int[256];
-            try
-            {
-                grayBitmap.Lock();
-                unsafe
-                {
-                    byte* pBackBuffer = (byte*)(grayBitmap.BackBuffer);
-                    int tailAddressOffset = GetTailAddressOffset(grayBitmap);
-                    for (int row = 0; row < rows; row++)
-                    {
-                        for (int column = 0; column < cols; column++)
-                        {
-                            int pixel = (int)(*pBackBuffer++);
-                            statistics[pixel]++;
-                        }
-                        pBackBuffer = pBackBuffer + tailAddressOffset;
-                    }
-                }
-            }
-            finally
-            {
-                grayBitmap.Unlock();
-            }
-
-            return statistics;
-        }
-
-        private void GetMaxMin(int[] array, ref int max, ref int min)
-        {
-            max = 0;
-            min = 0;
-            for (int i = 0; i < array.Length; ++i)
-            {
-                if (array[i] > max)
-                {
-                    max = array[i];
-                    continue;
-                }
-                if (array[i] < min)
-                {
-                    min = array[i];
-                }
-            }
-        }
-
-        public WriteableBitmap GetHisto(WriteableBitmap grayPixel)
-        {
-            var size = cols * rows;
-            int pixelCols = 255;
-            int pixelRows = 100;
-
-            var statistics = GetPixelCount(grayPixel);
-            byte[] histogramContents = new byte[pixelCols * pixelRows];
-
-            int max = 0;
-            int min = 0;
-            GetMaxMin(statistics, ref max, ref min);
-
-            double maxPercent = max / (double)size;
-
-            for (int i = 0; i < pixelRows; ++i)
-            {
-                for (int j = 0; j < pixelCols; ++j)
-                {
-                    // 百分比, p/max - 100
-                    var check = (double)(((double)statistics[j]) / ((double)size));
-                    if (i < (100 - check / maxPercent * 100))
-                    {
-                        histogramContents[i * pixelCols + j] = 255;
-                    }
-                    else
-                    {
-                        histogramContents[i * pixelCols + j] = 0;
-                    }
-                }
-            }
-
-            var wb = new WriteableBitmap(pixelCols, pixelRows, DPIX, DPIY, PixelFormats.Gray8, null);
-            Int32Rect rect = new Int32Rect(0, 0, wb.PixelWidth, wb.PixelHeight);
-            int stride = wb.PixelWidth * PixelFormats.Gray8.BitsPerPixel / 8;
-            wb.WritePixels(rect, histogramContents, stride, 0);
             return wb;
         }
 
